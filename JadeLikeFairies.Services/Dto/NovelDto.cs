@@ -14,4 +14,17 @@ namespace JadeLikeFairies.Services.Dto
 
         public List<TagDto> Tags { get; set; }
     }
+
+    public class NovelPostDto
+    {
+        public string Title { get; set; }
+
+        public string[] AltTitles { get; set; }
+
+        public int TypeId { get; set; }
+
+        public List<int> GenreIds { get; set; }
+
+        public List<int> TagIds { get; set; }
+    }
 }

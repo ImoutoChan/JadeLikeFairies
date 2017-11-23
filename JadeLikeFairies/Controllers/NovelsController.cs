@@ -1,8 +1,12 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using JadeLikeFairies.Services.Abstract;
 using JadeLikeFairies.Services.Dto;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using JadeLikeFairies.Helpers;
 
 namespace JadeLikeFairies.Controllers
 {
@@ -10,10 +14,12 @@ namespace JadeLikeFairies.Controllers
     public class NovelsController : Controller
     {
         private readonly INovelsService _novelsService;
+        private readonly ILogger<NovelsController> _logger;
 
-        public NovelsController(INovelsService novelsService)
+        public NovelsController(INovelsService novelsService, ILogger<NovelsController> logger)
         {
             _novelsService = novelsService;
+            _logger = logger;
         }
 
         // GET api/novels
@@ -24,16 +30,46 @@ namespace JadeLikeFairies.Controllers
         }
 
         // GET api/novels/5
-        [HttpGet("{id}")]
-        public string Get(int id)
+        [HttpGet("{id}", Name = "GetNovel")]
+        public async Task<IActionResult> Get(int id)
         {
-            return "value";
+            var novel = await _novelsService.GetNovel(id);
+
+            if (novel == null)
+            {
+                return NotFound();
+            }
+
+            return Ok(novel);
         }
 
         // POST api/novels
         [HttpPost]
-        public void Post([FromBody]string value)
+        public async Task<IActionResult> Post([FromBody]NovelPostDto value)
         {
+            try
+            {
+                if (value == null)
+                {
+                    return BadRequest();
+                }
+
+                var newNovel = await _novelsService.AddNovel(value);
+
+                return CreatedAtRoute("GetNovel", new {id = newNovel.Id}, newNovel);
+            }
+            catch (ValidationException e)
+            {
+                _logger.LogMethodError(e);
+
+                return BadRequest(e.Message);
+            }
+            catch (Exception e)
+            {
+                _logger.LogMethodError(e);
+
+                return BadRequest();
+            }
         }
 
         // PUT api/novels/5
