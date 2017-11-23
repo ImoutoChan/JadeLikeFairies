@@ -1,6 +1,8 @@
 ﻿using System;
 using System.IO;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using JadeLikeFairies.Data.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -23,14 +25,29 @@ namespace JadeLikeFairies.Data
 
         public DbSet<NovelType> Types { get; set; }
 
+
         /// <summary>
         /// Autofill CreatedDate and UpdatedDate on creation/update
         /// </summary>
-        public override int SaveChanges()
+        public override int SaveChanges(bool acceptAllChangesOnSuccess)
+        {
+            SetDates();
+
+            return base.SaveChanges(acceptAllChangesOnSuccess);
+        }
+
+        public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = new CancellationToken())
+        {
+            SetDates();
+
+            return base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        }
+
+        private void SetDates()
         {
             var modifiedEntries = ChangeTracker.Entries()
-                .Where(x => x.State == EntityState.Added 
-                            || x.State == EntityState.Modified);
+                            .Where(x => x.State == EntityState.Added
+                                        || x.State == EntityState.Modified);
 
             var now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
@@ -42,11 +59,9 @@ namespace JadeLikeFairies.Data
                 {
                     entity.CreatedDate = now;
                 }
-                
+
                 entity.UpdatedDate = now;
             }
-
-            return base.SaveChanges();
         }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)

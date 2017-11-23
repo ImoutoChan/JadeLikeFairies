@@ -49,14 +49,10 @@ namespace JadeLikeFairies
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
+                app.SeedDatabase().Wait();
             }
 
             app.UseMvc();
-
-            using (var serviceScope = app.ApplicationServices.CreateScope())
-            {
-                serviceScope.ServiceProvider.GetService<ISeedService>().Seed().Wait();
-            }
         }
     }
 }
