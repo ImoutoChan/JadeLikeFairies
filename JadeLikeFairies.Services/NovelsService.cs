@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -50,7 +51,7 @@ namespace JadeLikeFairies.Services
             // set type
             var type = await _dbContext.Types.FirstOrDefaultAsync(x => x.Id == novelDto.TypeId);
 
-            newnovel.Type = type ?? throw new ValidationException($"Type with id:{novelDto.TypeId} was not found");
+            newnovel.Type = type ?? throw new DeepValidationException(nameof(novelDto.TypeId), $"Type with id:{novelDto.TypeId} was not found");
 
             newnovel.Genres = new List<NovelGenre>();
             foreach (var genreId in novelDto.GenreIds)
@@ -59,7 +60,7 @@ namespace JadeLikeFairies.Services
 
                 if (genre == null)
                 {
-                    throw new ValidationException($"Genre with id:{genreId} was not found");
+                    throw new DeepValidationException(nameof(novelDto.GenreIds), $"Genre with id:{genreId} was not found");
                 }
 
                 newnovel.Genres.Add(new NovelGenre {Genre = genre});
@@ -72,7 +73,7 @@ namespace JadeLikeFairies.Services
 
                 if (tag == null)
                 {
-                    throw new ValidationException($"Tag with id:{tagId} was not found");
+                    throw new DeepValidationException(nameof(novelDto.TagIds), $"Tag with id:{tagId} was not found");
                 }
 
                 newnovel.Tags.Add(new NovelTag { Tag = tag });
@@ -90,5 +91,20 @@ namespace JadeLikeFairies.Services
                 .Include(x => x.Tags).ThenInclude(x => x.Tag)
                 .Include(x => x.Genres).ThenInclude(x => x.Genre)
                 .Include(x => x.Type);
+    }
+
+    public class DeepValidationException : Exception
+    {
+        public DeepValidationException(string key, string error) 
+            : base($"{key} : {error}")
+        {
+            Key = key;
+            Error = error;
+        }
+
+        public string Key { get; set; }
+
+        public string Error { get; set; }
+
     }
 }

@@ -7,6 +7,7 @@ using JadeLikeFairies.Services.Dto;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using JadeLikeFairies.Helpers;
+using JadeLikeFairies.Services;
 
 namespace JadeLikeFairies.Controllers
 {
@@ -50,19 +51,23 @@ namespace JadeLikeFairies.Controllers
             try
             {
                 if (value == null)
-                {
-                    return BadRequest();
-                }
+                    return BadRequest("Empty body");
+                
+                if (!ModelState.IsValid)
+                    return BadRequest(ModelState);
+                
 
                 var newNovel = await _novelsService.AddNovel(value);
 
                 return CreatedAtRoute("GetNovel", new {id = newNovel.Id}, newNovel);
             }
-            catch (ValidationException e)
+            catch (DeepValidationException e)
             {
                 _logger.LogMethodError(e);
 
-                return BadRequest(e.Message);
+                ModelState.AddModelError(e.Key, e.Error);
+
+                return BadRequest(ModelState);
             }
             catch (Exception e)
             {
