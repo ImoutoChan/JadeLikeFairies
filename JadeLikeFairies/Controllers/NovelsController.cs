@@ -1,13 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.Threading.Tasks;
 using JadeLikeFairies.Services.Abstract;
 using JadeLikeFairies.Services.Dto;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using JadeLikeFairies.Helpers;
-using JadeLikeFairies.Services;
+using JadeLikeFairies.Services.Exceptions;
 
 namespace JadeLikeFairies.Controllers
 {
@@ -25,23 +23,47 @@ namespace JadeLikeFairies.Controllers
 
         // GET api/novels
         [HttpGet]
-        public async Task<List<NovelDto>> Get()
+        public async Task<IActionResult> Get()
         {
-            return await _novelsService.GetNovels();
+            try
+            {
+                var novels = await _novelsService.GetNovels();
+                return Ok(novels);
+            }
+            catch (Exception e)
+            {
+                _logger.LogMethodError(e);
+
+                return BadRequest(e.Message);
+            }
         }
 
         // GET api/novels/5
         [HttpGet("{id}", Name = "GetNovel")]
         public async Task<IActionResult> Get(int id)
         {
-            var novel = await _novelsService.GetNovel(id);
-
-            if (novel == null)
+            try
             {
-                return NotFound();
-            }
+                if (id < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(id), "Id should be greater than 0.");
+                }
 
-            return Ok(novel);
+                var novel = await _novelsService.GetNovel(id);
+
+                if (novel == null)
+                {
+                    return NotFound();
+                }
+
+                return Ok(novel);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogMethodError(ex);
+
+                return BadRequest(ex.Message);
+            }
         }
 
         // POST api/novels
@@ -50,9 +72,6 @@ namespace JadeLikeFairies.Controllers
         {
             try
             {
-                if (value == null)
-                    return BadRequest("Empty body");
-                
                 if (!ModelState.IsValid)
                     return BadRequest(ModelState);
                 
@@ -77,16 +96,65 @@ namespace JadeLikeFairies.Controllers
             }
         }
 
-        // PUT api/novels/5
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody]string value)
+        // PATCH api/novels/5
+        [HttpPatch("{id}")]
+        public async Task<IActionResult> Patch(int id, [FromBody]NovelPatchDto value)
         {
+            try
+            {
+                if (!ModelState.IsValid)
+                    return BadRequest(ModelState);
+
+                if (id < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(id), "Id should be greater than 0.");
+                }
+
+                var updatedNovel = await _novelsService.UpdateNovel(id, value);
+                
+                return AcceptedAtRoute("GetNovel", new { id = updatedNovel.Id }, updatedNovel);
+            }
+            catch (DeepValidationException e)
+            {
+                _logger.LogMethodError(e);
+
+                ModelState.AddModelError(e.Key, e.Error);
+
+                return BadRequest(ModelState);
+            }
+            catch (Exception e)
+            {
+                _logger.LogMethodError(e);
+
+                return BadRequest(e.Message);
+            }
         }
 
-        // DELETE api/values/5
+        // DELETE api/novels/5
         [HttpDelete("{id}")]
-        public void Delete(int id)
+        public async Task<IActionResult> Delete(int id)
         {
+            try
+            {
+                if (id < 0)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(id), "Id should be greater than 0.");
+                }
+
+                await _novelsService.Remove(id);
+
+                return NoContent();
+            }
+            catch (ResourceNotFoundException)
+            {
+                return NotFound();
+            }
+            catch (Exception e)
+            {
+                _logger.LogMethodError(e);
+
+                return BadRequest(e.Message);
+            }
         }
     }
 }

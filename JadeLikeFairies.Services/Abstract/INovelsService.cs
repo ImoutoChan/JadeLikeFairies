@@ -9,5 +9,7 @@ namespace JadeLikeFairies.Services.Abstract
         Task<List<NovelDto>> GetNovels();
         Task<NovelDto> GetNovel(int id);
         Task<NovelDto> AddNovel(NovelPostDto value);
+        Task Remove(int id);
+        Task<NovelDto> UpdateNovel(int id, NovelPatchDto value);
     }
 }

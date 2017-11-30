@@ -32,4 +32,18 @@ namespace JadeLikeFairies.Services.Dto
 
         public List<int> TagIds { get; set; }
     }
+
+    public class NovelPatchDto
+    {
+        public string Title { get; set; }
+
+        public string[] AltTitles { get; set; }
+        
+        [Range(0, Int32.MaxValue)]
+        public int? TypeId { get; set; }
+
+        public List<int> GenreIds { get; set; }
+
+        public List<int> TagIds { get; set; }
+    }
 }
